@@ -28,33 +28,37 @@ def list_objects(bucket_name, folder_prefix, days_back,name_filter=None):
         obj for obj in all_objects if obj.get("LastModified").replace(tzinfo=None) >= cutoff_date
     ]
     
- 
     if name_filter:
         filtered_objects = [
             obj for obj in filtered_objects if name_filter.lower() in obj["Key"].lower()
         ]
-    # Sort objects by LastModified date, newest first
+    # Sort objects by LastModified date(newest first)
     return sorted(filtered_objects, key=lambda x: x["LastModified"], reverse=True)
 
 def download_files(bucket_name, files_list):
     """
-    Download files from S3 bucket to local directory.
+    Download files from S3 bucket to local directory with progress reporting.
     
     Args:
         bucket_name (str): Name of the S3 bucket
         files_list (list): List of file objects to download
     """
-    s3 = boto3.client("s3")  # Initialize S3 client
-    download_dir = Path(os.getcwd()) / "downloads"  # Create downloads directory in current working directory
+    s3 = boto3.client("s3") 
+    download_dir = Path(os.getcwd()) / "downloads"
     download_dir.mkdir(exist_ok=True)  # Create directory if it doesn't exist
     
+    total_files = len(files_list)
+    
     for obj in files_list:
-        file_key = obj['Key']  # Get S3 object key
-        # Use basename or create filename from key if no basename exists
+        file_key = obj['Key']
         file_name = os.path.basename(file_key) or file_key.replace('/', '_')
-        local_path = download_dir / file_name  # Full local path
-        print(f"Downloading {file_key} -> {local_path}")
-        s3.download_file(bucket_name, file_key, str(local_path))  # Download the file
+        local_path = download_dir / file_name
+        print(f"Downloading {file_key} -> {local_path} ({index}/{total_files})")
+        try:
+            s3.download_file(bucket_name, file_key, str(local_path))
+            print(f"✓ Success: {file_name}")
+        except Exception as e:
+            print(f"✗ Error: {str(e)}")
 
 def main():
     """
