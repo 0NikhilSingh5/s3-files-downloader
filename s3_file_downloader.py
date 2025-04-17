@@ -3,7 +3,7 @@ from datetime import datetime, timedelta  # For date manipulation
 import os  # For operating system functionality
 from pathlib import Path  # For easier path handling
 
-def list_objects(bucket_name, folder_prefix, days_back):
+def list_objects(bucket_name, folder_prefix, days_back,name_filter=None):
     """
     List objects in an S3 bucket that were modified within a specified number of days.
     
@@ -15,21 +15,24 @@ def list_objects(bucket_name, folder_prefix, days_back):
     Returns:
         list: Sorted list of objects, newest first
     """
-    s3 = boto3.client("s3")  # Initialize S3 client
-    cutoff_date = datetime.now() - timedelta(days=days_back)  # Calculate cutoff date
-    
-    # Use paginator to handle large numbers of objects
+    s3 = boto3.client("s3")
+    cutoff_date = datetime.now() - timedelta(days=days_back)
     paginator = s3.get_paginator('list_objects_v2')
     pages = paginator.paginate(Bucket=bucket_name, Prefix=folder_prefix)
     all_objects = []
     for page in pages:
-        all_objects.extend(page.get('Contents', []))  # Collect all objects across pages
+        all_objects.extend(page.get('Contents', []))  
     
     # Filter objects by modified date
     filtered_objects = [
         obj for obj in all_objects if obj.get("LastModified").replace(tzinfo=None) >= cutoff_date
     ]
     
+ 
+    if name_filter:
+        filtered_objects = [
+            obj for obj in filtered_objects if name_filter.lower() in obj["Key"].lower()
+        ]
     # Sort objects by LastModified date, newest first
     return sorted(filtered_objects, key=lambda x: x["LastModified"], reverse=True)
 
