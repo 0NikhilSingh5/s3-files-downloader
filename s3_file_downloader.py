@@ -59,6 +59,26 @@ def download_files(bucket_name, files_list):
             print(f"✓ Success: {file_name}")
         except Exception as e:
             print(f"✗ Error: {str(e)}")
+ 
+def display_file_info(files_list):
+    """
+    Display information about found files including size.
+    
+    Args:
+        files_list (list): List of file objects
+    """
+    if not files_list:
+        print("No files found.")
+        return
+    
+    print(f"\nFound {len(files_list)} files:")
+    total_size = 0
+    for obj in files_list:
+        file_size_kb = obj.get('Size', 0) / 1024
+        total_size += file_size_kb
+        print(f"- {obj['Key']} ({file_size_kb:.2f} KB)")
+    
+    print(f"\nTotal size: {total_size:.2f} KB ({total_size/1024:.2f} MB)")
 
 def main():
     """
